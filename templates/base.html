@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Verdant Heritage Organic Farm | Fresh From Our Fields{% endblock %}</title>
+  <meta name="description" content="{% block meta_desc %}Certified organic, regenerative farm providing fresh heirloom vegetables, fruits, artisanal CSA harvest boxes, and guided farm tours.{% endblock %}">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%200%20100%20100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Top Announcement Bar -->
+  <div class="top-bar-announcement">
+    <span class="badge">Dawn Harvest</span>
+    <span>Daily certified organic picking dispatched fresh. Free farm delivery on orders over $35!</span>
+  </div>
+
+  <!-- Sticky Responsive Header -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <!-- Brand Logo -->
+      <a href="/" class="logo-brand">
+        <div class="logo-crest">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>Verdant Heritage</h1>
+          <span>Organic Farm • Est. 1948</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav>
+        <ul class="desktop-nav">
+          <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a></li>
+          <li><a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}">About</a></li>
+          <li><a href="/shop" class="nav-link {% if request.path.startswith('/shop') %}active{% endif %}">Shop</a></li>
+          <li><a href="/csa" class="nav-link {% if request.path == '/csa' %}active{% endif %}">CSA</a></li>
+          <li><a href="/visits" class="nav-link {% if request.path == '/visits' %}active{% endif %}">Farm Visits</a></li>
+          <li><a href="/blog" class="nav-link {% if request.path.startswith('/blog') %}active{% endif %}">Blog</a></li>
+          <li><a href="/contact" class="nav-link {% if request.path == '/contact' %}active{% endif %}">Contact</a></li>
+        </ul>
+      </nav>
+
+      <!-- Utility Actions -->
+      <div class="nav-actions">
+        <!-- Search Trigger -->
+        <a href="/shop" class="icon-btn" title="Search Farm Store" id="searchTrigger">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </a>
+
+        <!-- Cart Drawer Trigger -->
+        <button class="icon-btn" id="cartTrigger" title="View Shopping Cart">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          <span class="cart-badge-count" style="display: none;">0</span>
+        </button>
+
+        <!-- Account Button -->
+        <button class="btn-account-pill" id="accountBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>Account</span>
+        </button>
+
+        <!-- Mobile Hamburger Toggle -->
+        <button class="mobile-toggle" id="mobileNavToggle" aria-label="Toggle Navigation">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobileNavDrawer" style="display: none; background: var(--color-white); border-bottom: 1px solid var(--color-border); padding: 1.5rem;">
+      <ul style="list-style: none; display: flex; flex-direction: column; gap: 1rem; font-size: 1.1rem; font-family: var(--font-ui); font-weight: 700;">
+        <li><a href="/" style="color: var(--color-forest);">Home</a></li>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/shop">Shop Fresh Produce</a></li>
+        <li><a href="/csa">CSA Harvest Boxes</a></li>
+        <li><a href="/visits">Farm Visits & Tours</a></li>
+        <li><a href="/blog">Farm Blog & Recipes</a></li>
+        <li><a href="/contact">Contact & Map</a></li>
+        <li><a href="/account">My Account & Orders</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Slide-Out Cart Drawer -->
+  <div class="cart-drawer-overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping Cart">
+    <div class="cart-drawer-header">
+      <h3>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+        Farm Fresh Cart
+      </h3>
+      <button class="btn-close-drawer" id="closeCartDrawer" aria-label="Close Cart">&times;</button>
+    </div>
+
+    <!-- Free Shipping Indicator -->
+    <div class="cart-free-shipping-bar">
+      <div class="cart-shipping-text" id="shippingProgressText">
+        Add <strong>$35.00</strong> more for Free Delivery
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="shippingProgressFill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <!-- Items List -->
+    <div class="cart-drawer-items" id="cartDrawerItems">
+      <!-- Injected by JavaScript -->
+    </div>
+
+    <!-- Cart Footer & Summary -->
+    <div class="cart-drawer-footer">
+      <div class="cart-summary-row">
+        <span>Produce Subtotal:</span>
+        <span id="cartSubtotalDisplay">$0.00</span>
+      </div>
+      <div class="cart-summary-row">
+        <span>Farm Delivery:</span>
+        <span id="cartDeliveryDisplay">$5.00</span>
+      </div>
+      <div class="cart-summary-row cart-summary-total">
+        <span>Estimated Total:</span>
+        <span id="cartTotalDisplay">$0.00</span>
+      </div>
+      <div class="cart-footer-actions">
+        <a href="/checkout" class="btn btn-primary" id="btnDrawerCheckout" onclick="FarmApp.closeCartDrawer()">Proceed to Checkout</a>
+        <button class="btn btn-outline btn-sm" onclick="FarmApp.closeCartDrawer()">Continue Shopping</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Global Authentication Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Farmstead Member Portal</h3>
+        <button class="btn-modal-close" id="closeAuthModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" data-tab="login">Log In</button>
+          <button class="auth-tab-btn" data-tab="register">Create Account</button>
+        </div>
+
+        <!-- Login Form -->
+        <div class="auth-view" id="loginView">
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="loginEmail">Email Address</label>
+              <input type="email" id="loginEmail" name="email" class="form-control" placeholder="yourname@domain.com" required value="demo@verdantfarm.com">
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" name="password" class="form-control" placeholder="••••••••" required value="password123">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+              <label class="form-check">
+                <input type="checkbox" name="remember" checked> Remember Me
+              </label>
+              <a href="#" style="font-size: 0.85rem; color: var(--color-leaf); font-weight: 600;" onclick="FarmApp.switchAuthTab('forgot'); return false;">Forgot Password?</a>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Log In</button>
+            <div style="text-align: center; margin-top: 1rem; font-size: 0.88rem; color: var(--color-text-muted);">
+              Don't have an account? <a href="#" style="color: var(--color-forest); font-weight: 700;" onclick="FarmApp.switchAuthTab('register'); return false;">Sign Up</a>
+            </div>
+          </form>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="auth-view" id="registerView" style="display: none;">
+          <form id="registerForm">
+            <div class="form-group">
+              <label for="regName">Full Name *</label>
+              <input type="text" id="regName" name="name" class="form-control" placeholder="Eleanor Vance" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regEmail">Email *</label>
+                <input type="email" id="regEmail" name="email" class="form-control" placeholder="name@email.com" required>
+              </div>
+              <div class="form-group">
+                <label for="regPhone">Phone Number *</label>
+                <input type="tel" id="regPhone" name="phone" class="form-control" placeholder="(555) 000-0000" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regPassword">Password *</label>
+                <input type="password" id="regPassword" name="password" class="form-control" placeholder="••••••••" minlength="6" required>
+              </div>
+              <div class="form-group">
+                <label for="regConfirm">Confirm Password *</label>
+                <input type="password" id="regConfirm" name="confirm_password" class="form-control" placeholder="••••••••" minlength="6" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="regAddress">Delivery Address (Optional)</label>
+              <input type="text" id="regAddress" name="address" class="form-control" placeholder="Street, City, Postal Code">
+            </div>
+            <div class="form-group">
+              <label class="form-check">
+                <input type="checkbox" required checked> I agree to the <a href="#" onclick="alert('Terms & Privacy: We protect your privacy and ensure sustainable organic practices.'); return false;" style="color: var(--color-leaf); text-decoration: underline;">Terms & Privacy Policy</a>
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+            <div style="text-align: center; margin-top: 1rem; font-size: 0.88rem; color: var(--color-text-muted);">
+              Already have an account? <a href="#" style="color: var(--color-forest); font-weight: 700;" onclick="FarmApp.switchAuthTab('login'); return false;">Log In</a>
+            </div>
+          </form>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div class="auth-view" id="forgotView" style="display: none;">
+          <div id="forgotSuccessMsg" style="display: none; background: var(--color-leaf-subtle); color: var(--color-leaf); padding: 1.2rem; border-radius: var(--radius-md); margin-bottom: 1.2rem;">
+            <p id="forgotSuccessText"></p>
+            <button type="button" class="btn btn-outline btn-sm" style="margin-top: 0.8rem;" onclick="FarmApp.switchAuthTab('login')">Return to Log In</button>
+          </div>
+          <form id="forgotPasswordForm">
+            <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.2rem;">
+              Enter the email address registered with your farm account, and we will send you a secure verification link to reset your password.
+            </p>
+            <div class="form-group">
+              <label for="forgotEmail">Email Address</label>
+              <input type="email" id="forgotEmail" name="email" class="form-control" placeholder="yourname@domain.com" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Send Reset Link</button>
+            <div style="text-align: center; margin-top: 1rem;">
+              <a href="#" style="font-size: 0.88rem; color: var(--color-forest); font-weight: 700;" onclick="FarmApp.switchAuthTab('login'); return false;">← Back to Log In</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick View Product Modal -->
+  <div class="modal-overlay" id="quickViewModal">
+    <div class="modal-box" style="max-width: 780px;">
+      <div class="modal-header">
+        <h3>Farm Fresh Inspection</h3>
+        <button class="btn-modal-close" onclick="FarmApp.closeQuickView()">&times;</button>
+      </div>
+      <div class="modal-body" id="quickViewContent">
+        <!-- Injected via FarmApp.openQuickView -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Block -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Heritage Plaque / Wood Banner (Inspired by User Template) -->
+  <section class="heritage-wood-banner">
+    <div class="heritage-wood-banner-inner">
+      <div class="heritage-wood-item">
+        <div class="heritage-seal-icon">🌱</div>
+        <div>
+          <div class="heritage-wood-label">Sustainable</div>
+          <div style="font-size: 0.75rem; color: #c4b5a5;">100% Regenerative & Solar Powered</div>
+        </div>
+      </div>
+
+      <div class="heritage-wood-emblem">
+        <div style="font-size: 0.75rem; color: var(--color-wheat-light); letter-spacing: 0.15em; text-transform: uppercase;">Est. 1948 • Family Owned</div>
+        <div class="heritage-wood-emblem-text">Quality • Care • Community</div>
+      </div>
+
+      <div class="heritage-wood-item">
+        <div class="heritage-seal-icon">🤝</div>
+        <div>
+          <div class="heritage-wood-label">Community</div>
+          <div style="font-size: 0.75rem; color: #c4b5a5;">Local Food Security & Shared Harvest</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="heritage-red-ribbon">
+    ❧ From Our Fields To Yours • Growing Tomorrow With Care ❧
+  </div>
+
+  <!-- Comprehensive Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <!-- Brand Summary -->
+        <div class="footer-brand">
+          <h2>Verdant Heritage Farm</h2>
+          <p>
+            Rooted in 78 years of responsible earth stewardship. We grow nutrient-dense heirloom vegetables, crisp orchard fruits, and heritage grains using 100% certified organic and regenerative practices.
+          </p>
+          <div style="font-family: var(--font-ui); font-size: 0.85rem; color: var(--color-wheat-light);">
+            📍 4820 Valley Meadow Road, Riverdale Orchard Valley<br>
+            📞 (555) 472-8839 • ✉️ hello@verdantfarm.com
+          </div>
+        </div>
+
+        <!-- Farm -->
+        <div class="footer-col">
+          <h4>Farm</h4>
+          <ul class="footer-nav-list">
+            <li><a href="/about">About Our Roots</a></li>
+            <li><a href="/about#practices">Regenerative Practices</a></li>
+            <li><a href="/about#team">Meet the Farmers</a></li>
+            <li><a href="/blog">Farm Dispatches</a></li>
+          </ul>
+        </div>
+
+        <!-- Shop -->
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <ul class="footer-nav-list">
+            <li><a href="/shop">All Produce</a></li>
+            <li><a href="/shop?category=Farm+Boxes">Harvest Boxes</a></li>
+            <li><a href="/csa">CSA Membership</a></li>
+            <li><a href="javascript:void(0)" onclick="FarmApp.openCartDrawer()">Cart Drawer</a></li>
+          </ul>
+        </div>
+
+        <!-- Visit & Support -->
+        <div class="footer-col">
+          <h4>Visit & Support</h4>
+          <ul class="footer-nav-list">
+            <li><a href="/visits">Tour Packages</a></li>
+            <li><a href="/visits#book">Book a Visit</a></li>
+            <li><a href="/contact">Farm Stand Hours</a></li>
+            <li><a href="/contact#faq">Harvest FAQs</a></li>
+          </ul>
+        </div>
+
+        <!-- Account & Newsletter -->
+        <div class="footer-col">
+          <h4>Stay Connected</h4>
+          <p style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 0.8rem;">
+            Subscribe to our seasonal crop forecasts and kitchen recipes:
+          </p>
+          <form class="newsletter-form" style="margin: 0; flex-direction: column; align-items: stretch;">
+            <input type="email" class="newsletter-input" placeholder="Your email address" required style="border-radius: var(--radius-md); padding: 0.7rem 1rem;">
+            <button type="submit" class="btn btn-accent btn-sm" style="margin-top: 0.5rem; width: 100%;">Subscribe</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="footer-bottom">
+        <div>&copy; {{ current_year }} Verdant Heritage Organic Farm LLC. Certified USDA Organic. All Rights Reserved.</div>
+        <div class="footer-links">
+          <a href="#" onclick="alert('Privacy Policy: We never sell or share your personal information.'); return false;">Privacy Policy</a>
+          <a href="#" onclick="alert('Terms & Conditions: Freshness guaranteed on all deliveries.'); return false;">Terms of Service</a>
+          <a href="#" onclick="alert('Refund Policy: 100% satisfaction guaranteed or full replacement.'); return false;">Refund Guarantee</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Back to Top Button -->
+  <button class="back-to-top" id="backToTopBtn" title="Back to Top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+  </button>
+
+  <!-- JavaScript Bundle -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

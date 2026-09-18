@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Speakers Directory | Google Cloud Summit 2026{% endblock %}
+
+{% block content %}
+<div class="speakers-page">
+    <div class="container">
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumbs-nav" aria-label="Breadcrumb">
+            <a href="/">Home</a>
+            <span class="bc-sep">/</span>
+            <span class="bc-current">Speakers</span>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="speakers-hero-header">
+            <div class="badge badge-green">Industry Leaders & Keynotes</div>
+            <h1 class="speakers-hero-title">Meet Our 11 World-Class Speakers</h1>
+            <p class="speakers-hero-subtitle">
+                Engineers, architects, and researchers pioneering generative AI, large-scale Kubernetes fleets, real-time data pipelines, and zero-trust security.
+            </p>
+
+            <!-- Speaker Search Filter -->
+            <div class="speaker-search-wrapper">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="speakerSearchInput" class="search-input" placeholder="Filter speakers by name (e.g. Elena, Priya, Chen), company (e.g. Google Cloud), or role..." oninput="filterSpeakersList()">
+                <button class="search-clear-btn" id="speakerClearBtn" onclick="clearSpeakerSearch()">&times;</button>
+            </div>
+        </div>
+
+        <!-- Speakers List Grid -->
+        <div class="speakers-directory-grid" id="speakersGrid">
+            {% for spk in speakers %}
+            <div class="speaker-profile-card" 
+                 id="speaker-{{ spk.id }}"
+                 data-name="{{ spk.full_name | lower }} {{ spk.first_name | lower }} {{ spk.last_name | lower }}"
+                 data-company="{{ spk.company | lower }}"
+                 data-role="{{ spk.role | lower }}">
+                
+                <div class="speaker-card-top">
+                    <div class="speaker-avatar-container">
+                        <img src="{{ spk.avatar }}" alt="{{ spk.full_name }}" class="speaker-avatar-main" loading="lazy">
+                        <div class="speaker-avatar-glow"></div>
+                    </div>
+                    
+                    <div class="speaker-identity">
+                        <h2 class="speaker-name-main">{{ spk.full_name }}</h2>
+                        <span class="speaker-role-main">{{ spk.role }}</span>
+                        <span class="speaker-company-tag">{{ spk.company }}</span>
+                    </div>
+                </div>
+
+                <p class="speaker-full-bio">{{ spk.bio }}</p>
+
+                <!-- Speaker's Sessions -->
+                <div class="speaker-sessions-box">
+                    <h4 class="sessions-box-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        Speaking Sessions:
+                    </h4>
+                    <div class="speaker-sessions-list">
+                        {% for talk in spk.talks %}
+                        <a href="/talk/{{ talk.id }}" class="speaker-session-item">
+                            <div class="session-item-header">
+                                <span class="session-talk-num">Talk #{{ talk.id }}</span>
+                                <span class="session-time">{{ talk.start_time }} – {{ talk.end_time }}</span>
+                            </div>
+                            <span class="session-item-title">{{ talk.title }}</span>
+                            <span class="session-room">{{ talk.room }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Card Footer with LinkedIn Link -->
+                <div class="speaker-card-footer">
+                    <a href="{{ spk.linkedin }}" target="_blank" rel="noopener" class="btn btn-outline linkedin-btn-block" title="Connect with {{ spk.full_name }} on LinkedIn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.78a1.64 1.64 0 1 0 0 3.28 1.64 1.64 0 0 0 0-3.28z"/></svg>
+                        <span>Connect with {{ spk.first_name }} on LinkedIn</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Empty Speaker Search Message -->
+        <div class="empty-state-box" id="emptySpeakerState" style="display: none;">
+            <div class="empty-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <h3 class="empty-title">No speakers found</h3>
+            <p class="empty-text">Try clearing your search query or searching for a different name, role, or company.</p>
+            <button class="btn btn-primary" onclick="clearSpeakerSearch()">View All 11 Speakers</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

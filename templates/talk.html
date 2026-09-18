@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}{{ talk.title }} | Google Cloud Summit 2026{% endblock %}
+
+{% block content %}
+<div class="talk-detail-page">
+    <div class="container">
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumbs-nav" aria-label="Breadcrumb">
+            <a href="/">Home</a>
+            <span class="bc-sep">/</span>
+            <a href="/#schedule">Schedule</a>
+            <span class="bc-sep">/</span>
+            <span class="bc-current">Talk #{{ talk.id }}</span>
+        </nav>
+
+        <!-- Talk Main Header Card -->
+        <div class="talk-header-hero">
+            <div class="talk-header-top">
+                <div class="talk-category-group">
+                    <span class="badge-talk-id">Talk #{{ talk.id }}</span>
+                    {% for cat in talk.categories %}
+                        <span class="badge-category cat-{{ cat | lower | replace(' ', '-') | replace('&', 'and') }}">{{ cat }}</span>
+                    {% endfor %}
+                    <span class="badge-level badge-{{ talk.level | lower | replace(' ', '-') }}">{{ talk.level }}</span>
+                </div>
+                
+                <div class="talk-header-actions">
+                    <button class="btn btn-outline" id="talkDetailBookmarkBtn" onclick="toggleBookmark({{ talk.id }})">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        <span id="talkDetailBookmarkText">Add to My Schedule</span>
+                    </button>
+                    <a href="/#schedule" class="btn btn-ghost">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                        <span>Back to Schedule</span>
+                    </a>
+                </div>
+            </div>
+
+            <h1 class="talk-detail-title">{{ talk.title }}</h1>
+
+            <div class="talk-detail-meta-bar">
+                <div class="meta-pill-large">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span><strong>{{ talk.start_time }} – {{ talk.end_time }}</strong> ({{ talk.duration_mins }} mins)</span>
+                </div>
+                <div class="meta-pill-large">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span><strong>{{ talk.room }}</strong></span>
+                </div>
+                <div class="meta-pill-large">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span>{{ event.date }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Talk Content Layout -->
+        <div class="talk-content-grid">
+            <!-- Left Column: Description, Takeaways, Prerequisites -->
+            <div class="talk-main-column">
+                <!-- Summary & Description -->
+                <div class="content-block">
+                    <h2 class="content-block-title">Session Deep-Dive</h2>
+                    <p class="talk-lead-summary">{{ talk.summary }}</p>
+                    <div class="talk-full-description">
+                        <p>{{ talk.description }}</p>
+                    </div>
+                </div>
+
+                <!-- Key Takeaways -->
+                <div class="content-block">
+                    <h2 class="content-block-title">What You Will Learn & Take Away</h2>
+                    <div class="takeaways-cards-list">
+                        {% for item in talk.key_takeaways %}
+                        <div class="takeaway-card">
+                            <div class="takeaway-icon">&check;</div>
+                            <div class="takeaway-text">{{ item }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Prerequisites -->
+                <div class="content-block">
+                    <h2 class="content-block-title">Prerequisites & Recommended Background</h2>
+                    <div class="prereq-card">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="prereq-icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <p class="prereq-desc">{{ talk.prerequisites }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Speaker Cards -->
+            <aside class="talk-sidebar-column">
+                <div class="sidebar-sticky-box">
+                    <h3 class="sidebar-heading">Featured {{ 'Speaker' if talk.speakers | length == 1 else 'Speakers' }} ({{ talk.speakers | length }})</h3>
+                    
+                    <div class="sidebar-speakers-list">
+                        {% for spk in talk.speakers %}
+                        <div class="speaker-detail-card">
+                            <div class="speaker-detail-header">
+                                <img src="{{ spk.avatar }}" alt="{{ spk.full_name }}" class="speaker-detail-avatar">
+                                <div class="speaker-detail-titles">
+                                    <h4 class="speaker-detail-name">{{ spk.full_name }}</h4>
+                                    <span class="speaker-detail-role">{{ spk.role }}</span>
+                                    <span class="speaker-detail-company">{{ spk.company }}</span>
+                                </div>
+                            </div>
+                            <p class="speaker-detail-bio">{{ spk.bio }}</p>
+                            <a href="{{ spk.linkedin }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline linkedin-btn-full" title="Open LinkedIn profile for {{ spk.full_name }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.78a1.64 1.64 0 1 0 0 3.28 1.64 1.64 0 0 0 0-3.28z"/></svg>
+                                <span>Connect on LinkedIn</span>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Session Info Box -->
+                    <div class="sidebar-info-box">
+                        <h4 class="info-box-title">Session Logistics</h4>
+                        <ul class="info-box-list">
+                            <li><strong>Date:</strong> Saturday, Oct 24, 2026</li>
+                            <li><strong>Room:</strong> {{ talk.room }}</li>
+                            <li><strong>Format:</strong> In-Person & Live Stream</li>
+                            <li><strong>Language:</strong> English (4K Video Recording)</li>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Talk Navigation Controls (Prev / Next) -->
+        <div class="talk-nav-footer">
+            {% if talk.id > 1 %}
+                <a href="/talk/{{ talk.id - 1 }}" class="btn btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <span>Previous Session (Talk #{{ talk.id - 1 }})</span>
+                </a>
+            {% else %}
+                <div></div>
+            {% endif %}
+
+            <a href="/#schedule" class="btn btn-primary">
+                <span>View Full 1-Day Schedule</span>
+            </a>
+
+            {% if talk.id < 8 %}
+                <a href="/talk/{{ talk.id + 1 }}" class="btn btn-outline">
+                    <span>Next Session (Talk #{{ talk.id + 1 }})</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </a>
+            {% else %}
+                <div></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} | Verdant Heritage Farm{% endblock %}
+
+{% block content %}
+<div class="section-cream" style="padding: 1.5rem 0; border-bottom: 1px solid var(--color-border-light);">
+  <div class="container">
+    <div style="font-size: 0.88rem; color: var(--color-text-muted);">
+      <a href="/" style="color: var(--color-forest);">Home</a> / 
+      <a href="/shop" style="color: var(--color-forest);">Shop</a> / 
+      <a href="/shop?category={{ product.category }}" style="color: var(--color-forest);">{{ product.category }}</a> / 
+      <span>{{ product.name }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="section section-beige" style="padding: 3.5rem 0 5rem;">
+  <div class="container">
+    <div style="background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: 3rem; box-shadow: var(--shadow-sm); margin-bottom: 4rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 3.5rem;">
+        
+        <!-- Gallery Column -->
+        <div>
+          <div style="border-radius: var(--radius-lg); overflow: hidden; height: 440px; margin-bottom: 1rem; border: 1px solid var(--color-border-light);">
+            <img id="mainProductImg" src="{{ product.image }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          {% if product.gallery and product.gallery|length > 1 %}
+          <div style="display: flex; gap: 0.75rem;">
+            {% for gimg in product.gallery %}
+            <div style="width: 80px; height: 80px; border-radius: var(--radius-md); overflow: hidden; border: 2px solid {% if loop.first %}var(--color-leaf){% else %}var(--color-border){% endif %}; cursor: pointer;" onclick="document.getElementById('mainProductImg').src='{{ gimg }}'; this.style.borderColor='var(--color-leaf)';">
+              <img src="{{ gimg }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Details Column -->
+        <div>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem;">
+            <span class="badge-tag badge-organic">{{ product.category }}</span>
+            <span class="badge-tag badge-bestseller">{{ product.badge }}</span>
+            {% if product.in_stock %}
+            <span class="badge-tag badge-organic">In Stock</span>
+            {% endif %}
+          </div>
+
+          <h1 style="font-size: 2.4rem; margin-bottom: 0.6rem;">{{ product.name }}</h1>
+          
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
+            <div style="color: var(--color-wheat); font-weight: 700;">★★★★★ ({{ product.reviews_count }} verified reviews)</div>
+            <div style="color: var(--color-text-light);">•</div>
+            <div style="color: var(--color-leaf); font-weight: 600;">100% Certified Organic</div>
+          </div>
+
+          <div style="display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 1.5rem; padding-bottom: 1.2rem; border-bottom: 1px solid var(--color-border-light);">
+            <span style="font-size: 2.2rem; font-weight: 800; font-family: var(--font-ui); color: var(--color-forest);">${{ "%.2f"|format(product.price) }}</span>
+            <span style="font-size: 1rem; color: var(--color-text-muted);">{{ product.unit }}</span>
+          </div>
+
+          <p style="font-size: 1.05rem; line-height: 1.65; color: var(--color-text-main); margin-bottom: 1.8rem;">
+            {{ product.description }}
+          </p>
+
+          <!-- Origin & Storage Grid -->
+          <div style="background: var(--color-cream); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: 1.4rem; margin-bottom: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.88rem;">
+            <div>
+              <strong style="color: var(--color-forest);">📍 Harvest Location:</strong>
+              <div style="color: var(--color-text-muted);">{{ product.origin }}</div>
+            </div>
+            <div>
+              <strong style="color: var(--color-forest);">🌾 Harvest Status:</strong>
+              <div style="color: var(--color-text-muted);">{{ product.harvest_date }}</div>
+            </div>
+            <div>
+              <strong style="color: var(--color-forest);">❄️ Storage Advice:</strong>
+              <div style="color: var(--color-text-muted);">{{ product.storage_tips }}</div>
+            </div>
+            <div>
+              <strong style="color: var(--color-forest);">🥗 Nutrition Profile:</strong>
+              <div style="color: var(--color-text-muted);">{{ product.nutrition }}</div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <div class="qty-stepper" style="padding: 0.3rem 0.5rem;">
+              <button class="qty-btn" onclick="const i = document.getElementById('detailQty'); if(i.value > 1) i.value--;">-</button>
+              <input type="text" id="detailQty" class="qty-input" value="1" readonly style="width: 44px; font-size: 1.1rem;">
+              <button class="qty-btn" onclick="const i = document.getElementById('detailQty'); i.value++;">+</button>
+            </div>
+
+            <button class="btn btn-secondary btn-lg" onclick="FarmApp.addToCart({{ product|tojson|forceescape }}, document.getElementById('detailQty').value)">
+              🛒 Add to Farm Basket
+            </button>
+
+            <button class="btn btn-primary btn-lg" onclick="FarmApp.addToCart({{ product|tojson|forceescape }}, document.getElementById('detailQty').value); window.location.href='/checkout';">
+              ⚡ Buy Now
+            </button>
+          </div>
+
+          <div style="font-size: 0.82rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 1.5rem;">
+            <span>🚚 Free delivery on orders over $35</span>
+            <span>🌿 100% Satisfaction Guarantee</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related %}
+    <div>
+      <div class="section-header" style="text-align: left; margin-bottom: 2rem;">
+        <span class="section-eyebrow">Pair With Your Harvest</span>
+        <h2 style="font-size: 1.8rem;">Related Fresh Produce</h2>
+      </div>
+
+      <div class="product-grid">
+        {% for rel in related %}
+        <div class="product-card">
+          <div class="product-image-wrapper" onclick="window.location.href='/product/{{ rel.id }}'">
+            <img src="{{ rel.image }}" alt="{{ rel.name }}" loading="lazy">
+            <div class="product-badge-float">
+              <span class="badge-tag badge-organic">{{ rel.badge }}</span>
+            </div>
+          </div>
+          <div class="product-body">
+            <h3 class="product-title" onclick="window.location.href='/product/{{ rel.id }}'">{{ rel.name }}</h3>
+            <div class="product-pricing">
+              <span class="product-price">${{ "%.2f"|format(rel.price) }}</span>
+              <span class="product-unit">{{ rel.unit }}</span>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="FarmApp.addToCart({{ rel|tojson|forceescape }}, 1)">Add to Cart</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
