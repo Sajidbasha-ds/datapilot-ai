@@ -54,3 +54,11 @@ htmlcov/
 .idea/
 *.swp
 *.swo
+
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Local environment files
+frontend/.env*

@@ -9,15 +9,29 @@ import sqlite3
 from typing import Any, Dict, List, Optional
 import pandas as pd
 
-DEFAULT_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "datapilot.db")
+def _resolve_default_db_path() -> str:
+    """Resolves DB path, using /tmp on serverless environments like Vercel/Lambda if needed."""
+    if os.environ.get("DATAPILOT_DB_PATH"):
+        return os.environ["DATAPILOT_DB_PATH"]
+    # Check if running in Vercel or AWS Lambda environment where filesystem is read-only
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return "/tmp/datapilot.db"
+    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "datapilot.db")
+
+DEFAULT_DB_PATH = _resolve_default_db_path()
 
 
 def get_db_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
-    """Opens a connection to the SQLite database and ensures directories exist."""
-    db_dir = os.path.dirname(db_path)
-    if db_dir and not os.path.exists(db_dir):
-        os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    """Opens a connection to the SQLite database and ensures directories exist with fallback."""
+    try:
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+        conn = sqlite3.connect(db_path)
+    except (OSError, sqlite3.OperationalError):
+        # Fallback to /tmp or in-memory on restricted filesystems
+        fallback_path = "/tmp/datapilot.db" if os.path.exists("/tmp") else ":memory:"
+        conn = sqlite3.connect(fallback_path)
     conn.row_factory = sqlite3.Row
     return conn
 

@@ -150,6 +150,7 @@ def init_session():
         "filename": None,
         "profile_data": None,
         "quality_data": None,
+        "target_info": None,
         "target_col": None,
         "problem_type": None,
         "ml_results": None,
@@ -204,7 +205,24 @@ if st.session_state.df is not None:
         st.sidebar.markdown(f"**Target:** `{st.session_state.target_col}`")
     if st.session_state.ml_results:
         st.sidebar.markdown(f"**Winning Model:** `{st.session_state.ml_results.get('best_model_name')}`")
+# Target Detection Summary
+if st.session_state.df is not None and st.session_state.target_info:
+    target_info = st.session_state.target_info
+    suggested_target = target_info.get("suggested_target")
+    confidence = target_info.get("confidence", 0.0)
+    reason = target_info.get("reason", "No reason provided")
 
+    st.subheader("🎯 Automatic Target Detection")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Suggested Target", suggested_target or "None")
+
+    with col2:
+        st.metric("Detection Confidence", f"{confidence * 100:.1f}%")
+
+    st.caption(f"Reason: {reason}")
 
 # Helper to recompute profiling
 def update_dataset(df: pd.DataFrame, filename: str):
@@ -216,7 +234,24 @@ def update_dataset(df: pd.DataFrame, filename: str):
 
         target_info = detect_target_column(df)
         st.session_state.target_col = target_info.get("suggested_target")
+        st.session_state.target_info = target_info
+        # Show automatic target-detection details
+        if target_info.get("suggested_target"):
+            confidence = target_info.get("confidence", 0.0)
+            reason = target_info.get("reason", "No reason provided")
 
+            if confidence < 0.25:
+                st.warning(
+                    f"Target suggestion: `{target_info['suggested_target']}` "
+                    f"(low confidence: {confidence * 100:.1f}%)"
+                )
+            else:
+                st.info(
+                    f"Suggested target: `{target_info['suggested_target']}` "
+                    f"— confidence: {confidence * 100:.1f}%"
+                )
+
+            st.caption(f"Reason: {reason}")
         qual = analyze_data_quality(df, target_col=st.session_state.target_col)
         st.session_state.quality_data = qual
 
@@ -667,6 +702,11 @@ elif selected_page == "7. ML Lab":
                 st.markdown("**Detected Formulation:** <span class='badge-pill badge-amber'>Unsupervised Analysis</span>", unsafe_allow_html=True)
 
         st.session_state.target_col = None if selected_target == "None (Unsupervised Mode)" else selected_target
+        if st.session_state.target_col is not None:
+            st.session_state.quality_data = analyze_data_quality(
+                df_ml,
+                target_col=st.session_state.target_col
+    )
         st.session_state.problem_type = detected_prob
 
         # Model Training Trigger

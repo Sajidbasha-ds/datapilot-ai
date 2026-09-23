@@ -106,17 +106,19 @@ def train_supervised_models(
             cv_scores = cross_val_score(full_pipeline, X_train, y_train, cv=cv_strategy, scoring=scoring_metric, n_jobs=1)
             cv_mean = float(np.mean(cv_scores))
             cv_std = float(np.std(cv_scores))
-        except Exception:
-            cv_mean = 0.0
-            cv_std = 0.0
+        except Exception as e:
+            cv_mean = np.nan
+            cv_std = np.nan
+            print(f"WARNING: Cross-validation failed for {name}: {e}")
 
-        # Fit model on training set
-        model.fit(X_train_trans, y_train)
-        y_pred = model.predict(X_test_trans)
+        # Fit the complete pipeline on the training set
+        full_pipeline.fit(X_train, y_train)
 
-        # Full inference pipeline for single/batch prediction
+        # Predict using the fitted complete pipeline
+        y_pred = full_pipeline.predict(X_test)
+
+        # Store the fitted pipeline for future predictions
         trained_pipelines[name] = full_pipeline
-
         # Model evaluation on held-out test fold
         if is_classification:
             y_prob = None

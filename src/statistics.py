@@ -159,6 +159,32 @@ def run_hypothesis_test(
             "assumptions": "Assumes data is approximately normally distributed or sample size is large (Central Limit Theorem).",
         }
 
+    elif test_type == "Pearson Correlation Test":
+        if not pd.api.types.is_numeric_dtype(clean_df[var1]) or not pd.api.types.is_numeric_dtype(clean_df[var2]):
+            return {"error": "Pearson correlation requires two numerical variables."}
+
+        coefficient, p_value = stats.pearsonr(clean_df[var1], clean_df[var2])
+        coefficient = float(coefficient)
+        p_value = float(p_value)
+        return {
+            "test_name": "Pearson Correlation Test",
+            "feature_1": var1,
+            "feature_2": var2,
+            "statistic": round(coefficient, 4),
+            "test_statistic": round(coefficient, 4),
+            "p_value": p_value,
+            "is_significant": bool(p_value < 0.05),
+            "statistically_significant": bool(p_value < 0.05),
+            "interpretation": _interpret_correlation(coefficient),
+            "null_hypothesis": f"There is no linear correlation between '{var1}' and '{var2}'.",
+            "conclusion": (
+                f"Reject Null Hypothesis (p={p_value:.4e} < 0.05): A statistically significant linear correlation was detected."
+                if p_value < 0.05
+                else f"Fail to Reject Null (p={p_value:.4f} >= 0.05): Insufficient statistical evidence of linear correlation."
+            ),
+            "assumptions": "Assumes paired numerical observations and a linear relationship without influential outliers.",
+        }
+
     elif test_type == "Mann-Whitney U Test":
         # Non-parametric equivalent of two-sample t-test
         groups = clean_df[var2].unique()
@@ -187,7 +213,7 @@ def run_hypothesis_test(
             "assumptions": "Non-parametric; robust to severe outliers and non-normal distributions.",
         }
 
-    elif test_type == "Chi-Square Test":
+    elif test_type in ("Chi-Square Test", "Chi-Square Test of Independence"):
         # Contingency table of var1 vs var2
         contingency_table = pd.crosstab(clean_df[var1], clean_df[var2])
         chi2, p_val, dof, expected = stats.chi2_contingency(contingency_table)
