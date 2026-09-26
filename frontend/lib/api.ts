@@ -10,7 +10,7 @@ import {
   SinglePredictionResult,
 } from "../types";
 
-const API_BASE = "";
+const API_BASE = "https://datapilot-ai-lnrb.onrender.com";
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
