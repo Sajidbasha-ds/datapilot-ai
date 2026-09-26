@@ -173,14 +173,27 @@ def train_supervised_models(
     # 8. Comparison Table & Best Model Selection
     results_df = pd.DataFrame(model_results)
     best_model_name: str
+
     if is_classification:
-        # Rank by F1-Score (Macro) primarily
-        results_df.sort_values(by=["F1-Score (Macro)", "Accuracy"], ascending=[False, False], inplace=True)
+        # Select the model using cross-validation on the training data.
+        # The held-out test set must NOT be used to choose the winner.
+        results_df.sort_values(
+            by=["CV F1 (Train)", "CV Std"],
+            ascending=[False, True],
+            inplace=True,
+            na_position="last",
+        )
         best_model_name = results_df.iloc[0]["Model"]
+
     else:
-        # Rank by R² primarily, then lowest RMSE
-        results_df.sort_values(by=["R²", "RMSE"], ascending=[False, True], inplace=True)
-        best_model_name = results_df.iloc[0]["Model"]
+        # Select the regression model using cross-validation R².
+        results_df.sort_values(
+            by=["CV R² (Train)", "CV Std"],
+            ascending=[False, True],
+            inplace=True,
+            na_position="last",
+        )
+        best_model_name = results_df.iloc[0]["Model"]    
 
     if progress_callback:
         progress_callback(1.0, f"Training complete! Best performer: {best_model_name}")
