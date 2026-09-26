@@ -159,6 +159,24 @@ export interface MlBenchmarkResults {
   feature_importance: Array<{
     feature: string;
     importance: number;
+    method?: "coefficient" | "tree_feature_importance";
+    model_type?: string;
+    coefficient?: number;
+    coefficient_strength?: number;
+    direction?: "positive" | "negative" | "zero";
+    decision_class?: string;
+    class_coefficients?: Array<{ class: string; coefficient: number }>;
+  }>;
+  feature_attributions?: Array<{
+    feature: string;
+    value: number;
+    method: "coefficient" | "tree_feature_importance";
+    model_type: string;
+    coefficient?: number;
+    coefficient_strength?: number;
+    direction?: "positive" | "negative" | "zero";
+    decision_class?: string;
+    class_coefficients?: Array<{ class: string; coefficient: number }>;
   }>;
   n_train: number;
   n_test: number;

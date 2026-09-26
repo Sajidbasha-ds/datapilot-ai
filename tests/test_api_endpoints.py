@@ -126,6 +126,11 @@ def test_full_api_workflow_lifecycle():
     assert "leaderboard" in t_data["data"]
     assert len(t_data["data"]["leaderboard"]) > 0
     assert t_data["data"]["best_model_name"] is not None
+    assert "feature_attributions" in t_data["data"]
+    assert all(
+        "feature" in item and "importance" in item
+        for item in t_data["data"]["feature_importance"]
+    )
 
     # 7. Single Prediction
     schema_res = client.get(f"/api/predict/schema/{session_id}")

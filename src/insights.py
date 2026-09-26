@@ -8,6 +8,52 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 
+def _leakage_scope_summary(problem_type: Optional[str] = None) -> str:
+    """Describe implemented leakage-risk controls and their limits."""
+    if problem_type and "Unsupervised" in problem_type:
+        return (
+            "The unsupervised workflow does not create a supervised train/test split or use target-correlation "
+            "screening. It screens constants and some high-cardinality ID-like columns on the supplied feature "
+            "matrix and fits preprocessing on that matrix. It does not automatically detect temporal leakage, "
+            "semantic post-outcome fields, or related records, so it cannot establish that all leakage is absent."
+        )
+
+    summary = (
+        "This supervised run splits data before feature screening, removes constant columns and some "
+        "high-cardinality ID-like columns from the training features, fits preprocessing on training data, "
+        "and uses cross-validation scores for candidate ranking while reserving the holdout for evaluation. "
+        if problem_type and ("Regression" in problem_type or "Classification" in problem_type)
+        else "When supervised training runs, it splits data before feature screening, removes constant columns and some "
+        "high-cardinality ID-like columns from the training features, fits preprocessing on training data, "
+        "and uses cross-validation scores for candidate ranking while reserving the holdout for evaluation. "
+    )
+    if problem_type and "Regression" in problem_type:
+        summary += (
+            "For regression, numeric feature/target correlations with absolute Pearson r >= 0.98 are screened "
+            "on the outer training partition before cross-validation; because this screen is not repeated inside "
+            "each CV fold, CV scores may be optimistic. "
+        )
+    elif problem_type and "Classification" in problem_type:
+        summary += (
+            "The training feature filter does not apply target-correlation screening to classification. "
+        )
+    else:
+        summary += (
+            "The numeric target-correlation screen is used only for regression, and it runs on the outer "
+            "training partition before cross-validation. "
+        )
+    summary += (
+        "Data-quality analysis can separately flag near-perfect numeric feature/target correlations on the "
+        "full dataset for review; that diagnostic does not remove features. "
+    )
+    summary += (
+        "These checks reduce specific risks but do not establish that all leakage is absent; the pipeline does "
+        "not automatically detect temporal leakage, categorical or semantic post-outcome features, or related "
+        "records split across a random train/test partition."
+    )
+    return summary
+
+
 def generate_automated_insights(
     profile_data: Dict[str, Any],
     quality_data: Dict[str, Any],
@@ -24,6 +70,14 @@ def generate_automated_insights(
 
     technical_points: List[str] = []
     executive_points: List[str] = []
+
+    if ml_results and any(
+        task in ml_results.get("problem_type", "")
+        for task in ("Regression", "Classification")
+    ):
+        technical_points.append(
+            f"Leakage checks and limits: {_leakage_scope_summary(ml_results.get('problem_type'))}"
+        )
 
     # 1. Volume & Dimensionality
     executive_points.append(
@@ -107,17 +161,61 @@ def generate_automated_insights(
                     f"and RMSE = {best_rmse}."
                 )
 
-        # Top Features
+        # Model-specific feature attribution
         importances = ml_results.get("feature_importances", {}).get(best_name, {})
-        if importances:
-            top_f = list(importances.keys())[0]
-            top_score = importances[top_f]
+        attributions = ml_results.get("feature_attributions", {}).get(best_name, [])
+        if attributions:
+            top = attributions[0]
+            top_feature = top["feature"]
+            top_value = top["value"]
+            if top.get("method") == "coefficient":
+                executive_points.append(
+                    f"Among the displayed transformed features, **{top_feature}** has the largest absolute model coefficient."
+                )
+                if "coefficient" in top and "Logistic" in top.get("model_type", best_name):
+                    direction = "increases" if top["coefficient"] > 0 else "decreases" if top["coefficient"] < 0 else "does not change"
+                    decision_class = top.get("decision_class", "positive class")
+                    technical_points.append(
+                        f"Model Coefficient: '{top_feature}' has β = {top['coefficient']:.4f} (|β| = {top_value:.4f}); "
+                        f"its sign {direction} the Logistic Regression decision score/log-odds for class '{decision_class}'. "
+                        "This is a model association, not evidence of causation."
+                    )
+                elif top.get("class_coefficients"):
+                    technical_points.append(
+                        f"Model Coefficient Strength: '{top_feature}' has the largest maximum absolute coefficient "
+                        f"across the Logistic Regression class-specific coefficient rows ({top_value:.4f}); "
+                        "this is not evidence of causation."
+                    )
+                else:
+                    technical_points.append(
+                        f"Model Coefficient Strength: '{top_feature}' has the largest absolute coefficient "
+                        f"({top_value:.4f}) in {best_name}; magnitude is not evidence of causation."
+                    )
+            elif top.get("method") == "tree_feature_importance":
+                executive_points.append(
+                    f"**{top_feature}** has the highest tree-based feature-importance value in {best_name}."
+                )
+                technical_points.append(
+                    f"Tree Feature Importance: '{top_feature}' has value {top_value:.4f} in {best_name}; "
+                    "this model attribution is not evidence of causation."
+                )
+        elif importances and "Logistic" in best_name:
+            top_feature, top_value = next(iter(importances.items()))
             executive_points.append(
-                f"The single most influential driver for predictions is **{top_f}**."
+                f"Among the displayed features, **{top_feature}** has the largest absolute model coefficient magnitude."
             )
             technical_points.append(
-                f"Feature Attribution: '{top_f}' contributed the largest Gini/gain importance ({top_score}) "
-                f"in the {best_name} decision trees."
+                f"Model Coefficient Strength: '{top_feature}' has magnitude {top_value:.4f}. "
+                "The coefficient sign is unavailable in these legacy results, and magnitude is not evidence of causation."
+            )
+        elif importances and any(tree_name in best_name for tree_name in ("Tree", "Forest", "Boosting")):
+            top_feature, top_value = next(iter(importances.items()))
+            executive_points.append(
+                f"**{top_feature}** has the highest tree-based feature-importance value in {best_name}."
+            )
+            technical_points.append(
+                f"Tree Feature Importance: '{top_feature}' has value {top_value:.4f} in {best_name}; "
+                "this model attribution is not evidence of causation."
             )
 
     return {
@@ -142,6 +240,20 @@ def answer_datapilot_query(
 
     overview = profile_data.get("overview", {})
 
+    if any(term in q for term in (
+        "leakage",
+        "data leak",
+        "safe from leak",
+        "features safe",
+        "safe features",
+        "trust this model",
+        "trust the model",
+        "test set protected",
+        "test set safe",
+    )):
+        problem_type = ml_results.get("problem_type") if ml_results else None
+        return _leakage_scope_summary(problem_type)
+
     # 1. Missing values query
     if any(k in q for k in ["missing", "null", "nan"]):
         tot_missing = overview.get("total_missing", 0)
@@ -156,16 +268,34 @@ def answer_datapilot_query(
         return ans
 
     # 2. Most important columns / features
-    if any(k in q for k in ["important", "driver", "influence", "feature importance", "top feature"]):
+    if any(k in q for k in ["important", "driver", "influence", "feature importance", "top feature", "coefficient", "attribution"]):
         if not ml_results or "feature_importances" not in ml_results:
-            return "To view feature importances, please train the models in the **ML Lab** tab first."
+            return "To view model feature attribution, please train the models in the **ML Lab** tab first."
         best_name = ml_results.get("best_model_name", "")
         importances = ml_results.get("feature_importances", {}).get(best_name, {})
         if not importances:
             return f"The current best model ({best_name}) does not output direct linear coefficients or tree importances."
-        ans = f"Based on the winning model (**{best_name}**), here are the top influential features:\n\n"
+        attributions = ml_results.get("feature_attributions", {}).get(best_name, [])
+        if attributions:
+            if attributions[0].get("method") == "coefficient":
+                is_logistic = "Logistic" in best_name
+                model_kind = "Logistic Regression" if is_logistic else "linear model"
+                ans = f"Based on the winning {model_kind} (**{best_name}**), these transformed features have the largest absolute model coefficients. Magnitude is not causal evidence.\n\n"
+                for item in attributions[:5]:
+                    if is_logistic and "coefficient" in item:
+                        ans += f"- **{item['feature']}**: β = {item['coefficient']:.4f} (|β| = {item['value']:.4f}), direction {item['direction']} for class '{item.get('decision_class', 'positive class')}'\n"
+                    elif item.get("class_coefficients"):
+                        ans += f"- **{item['feature']}**: maximum class-specific |β| = {item['value']:.4f}\n"
+                    else:
+                        ans += f"- **{item['feature']}**: |coefficient| = {item['value']:.4f}\n"
+            else:
+                ans = f"Based on the winning tree model (**{best_name}**), here are the highest tree feature-importance values. These are not causal effects.\n\n"
+                for item in attributions[:5]:
+                    ans += f"- **{item['feature']}**: {item['value']:.4f} tree feature-importance value\n"
+            return ans
+        ans = f"Based on the winning model (**{best_name}**), here are the highest model-attributed features. These values are not causal effects:\n\n"
         for feat, score in list(importances.items())[:5]:
-            ans += f"- **{feat}**: {score:.4f} importance score\n"
+            ans += f"- **{feat}**: {score:.4f} attribution strength\n"
         return ans
 
     # 3. Best model query
@@ -190,7 +320,7 @@ def answer_datapilot_query(
             return "Preprocessing steps: Missing numerical features are imputed with median, numerical features are standardized via StandardScaler, and categorical variables are one-hot encoded with handle_unknown='ignore'."
         logs = ml_results.get("logs", [])
         ans = "Here is the exact preprocessing pipeline applied:\n\n"
-        ans += "- **Leakage Prevention**: All imputers, encoders, and scalers were fit strictly on the training fold (80%).\n"
+        ans += "- **Training-split preprocessing**: Imputers, encoders, and scalers are fitted on training data; cross-validation refits them within each training fold. This reduces preprocessing leakage risk but does not guarantee that all leakage is absent.\n"
         ans += "- **Numerical Treatment**: Missing values filled via median, scaled via StandardScaler.\n"
         ans += "- **Categorical Treatment**: Missing filled with 'Unknown', one-hot encoded.\n"
         if logs:

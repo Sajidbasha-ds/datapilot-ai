@@ -158,7 +158,12 @@ def get_scatter(req: EdaScatterRequest):
 
     color_col = req.color_col if (req.color_col and req.color_col in df.columns) else session.target_col
     try:
-        fig = plot_scatter_relationship(df, x_col=req.x_col, y_col=req.y_col, color_col=color_col)
+        fig = plot_scatter_relationship(
+            df,
+            col_x=req.x_col,
+            col_y=req.y_col,
+            color_col=color_col,
+      )
         plotly_spec = json.loads(fig.to_json())
         return ApiResponse(
             success=True,

@@ -9,7 +9,7 @@ from scipy import stats
 
 
 def analyze_data_quality(df: pd.DataFrame, target_col: Optional[str] = None) -> Dict[str, Any]:
-    """Inspects dataset for quality issues: missingness, duplicates, outliers, collinearity, leakage."""
+    """Inspects data quality, including numeric target-correlation candidates for review."""
     total_rows = len(df)
     issues: List[Dict[str, Any]] = []
     missing_strategy_recommendations: Dict[str, Dict[str, Any]] = {}

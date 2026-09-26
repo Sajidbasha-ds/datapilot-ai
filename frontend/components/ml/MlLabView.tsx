@@ -83,7 +83,7 @@ export const MlLabView: React.FC<MlLabViewProps> = ({ session, mlResults, onResu
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Leakage-free preprocessing, stratified splits, multi-model evaluation, and cross-validation standard error analysis.
+              Training-split preprocessing, feature screening, stratified splits, multi-model evaluation, and cross-validation analysis.
             </p>
           </div>
 
@@ -230,7 +230,7 @@ export const MlLabView: React.FC<MlLabViewProps> = ({ session, mlResults, onResu
                 {mlResults.cv_folds}-Fold Stratified Cross-Validation
               </div>
               <span className="text-[11px] text-slate-500 block mt-1">
-                Fitted strictly on training fold to guarantee zero data leakage
+                Preprocessing is fitted within each training fold. Regression target-correlation screening runs on the outer training split before CV.
               </span>
             </div>
           </div>

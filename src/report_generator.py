@@ -173,11 +173,54 @@ def generate_pdf_report(
         story.append(t_models)
         story.append(Spacer(1, 14))
 
-        # Top Features
+        # Method-specific model attribution
         importances = ml_results.get("feature_importances", {}).get(best_model, {})
-        if importances:
-            story.append(Paragraph("4. Key Predictive Feature Drivers", section_style))
-            feat_table_data = [["Rank", "Feature Name", "Importance Score"]]
+        attributions = ml_results.get("feature_attributions", {}).get(best_model, [])
+        if attributions:
+            is_coefficient = attributions[0].get("method") == "coefficient"
+            is_logistic = "Logistic" in best_model
+            story.append(Paragraph("4. Model Feature Attribution", section_style))
+            measure_header = "Coefficient / Strength" if is_coefficient else "Tree Feature Importance"
+            feat_table_data = [["Rank", "Transformed Feature", measure_header]]
+            for rank, item in enumerate(attributions[:6], 1):
+                if is_logistic and "coefficient" in item:
+                    value_text = (
+                        f"Coefficient for {item.get('decision_class', 'positive class')}: "
+                        f"{item['coefficient']:+.4f}; absolute coefficient = {item['value']:.4f}"
+                    )
+                elif is_logistic and item.get("class_coefficients"):
+                    class_values = ", ".join(
+                        f"{entry['class']}: {entry['coefficient']:+.4f}"
+                        for entry in item["class_coefficients"]
+                    )
+                    value_text = f"maximum absolute coefficient = {item['value']:.4f}; {class_values}"
+                elif is_coefficient:
+                    value_text = f"|coefficient| = {item['value']:.4f}"
+                else:
+                    value_text = f"{item['value']:.4f}"
+                feat_table_data.append([str(rank), item["feature"], value_text])
+            story.append(Paragraph(
+                "Coefficient magnitude reflects the fitted model in transformed feature space; it is not causal evidence."
+                if is_coefficient
+                else "Tree-based feature importance is model-specific and is not causal evidence.",
+                body_style,
+            ))
+            t_feat = Table(feat_table_data, colWidths=[1.0 * inch, 4.2 * inch, 2.0 * inch])
+            t_feat.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ]))
+            story.append(t_feat)
+            story.append(Spacer(1, 14))
+        elif importances:
+            is_linear_model = any(model_name in best_model for model_name in ("Logistic", "Ridge", "Linear"))
+            story.append(Paragraph("4. Model Feature Attribution", section_style))
+            measure_header = "Coefficient Magnitude" if is_linear_model else "Tree Feature Importance"
+            feat_table_data = [["Rank", "Feature Name", measure_header]]
             for rank, (fname, fscore) in enumerate(list(importances.items())[:6], 1):
                 feat_table_data.append([str(rank), fname, f"{fscore:.4f}"])
 
@@ -191,6 +234,11 @@ def generate_pdf_report(
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
             ]))
             story.append(t_feat)
+            if is_linear_model:
+                story.append(Paragraph(
+                    "Legacy result contains coefficient magnitudes only; coefficient signs are unavailable. Magnitude is not causal evidence.",
+                    body_style,
+                ))
             story.append(Spacer(1, 14))
 
     # 5. Automated AI Insights & Explanations
@@ -204,14 +252,27 @@ def generate_pdf_report(
         story.append(Paragraph("No automated insights configured for this run.", body_style))
     story.append(Spacer(1, 14))
 
-    # 6. Scientific Limitations & Disclaimers
+    # 6. Leakage Checks and Methodological Limitations
     story.append(Paragraph("6. Statistical Assumptions & Methodological Disclaimers", section_style))
-    disclaimer_text = (
-        "This autonomous report is algorithmically compiled by DataPilot AI. All preprocessing was isolated to training partitions "
-        "to prevent data leakage. Statistical tests assume independence of observations and appropriate distributional traits. "
-        "Correlations reflect mathematical associations and MUST NOT be construed as empirical causal relationships."
-    )
-    story.append(Paragraph(disclaimer_text, body_style))
+    story.append(Paragraph(
+        "<b>Supervised leakage checks implemented:</b> Training splits before feature screening. Constant columns and "
+        "some high-cardinality ID-like columns are screened using training features. For regression, numeric "
+        "feature/target correlations with absolute Pearson r &gt;= 0.98 are screened on the outer training partition. "
+        "A separate data-quality diagnostic can flag numeric feature/target correlations with absolute Pearson "
+        "r &gt;= 0.95 across the full dataset for review; it does not remove those features. "
+        "Imputers, scalers, and encoders are fitted on training data and refitted inside each cross-validation fold; "
+        "candidate ranking uses cross-validation, while the holdout is used for evaluation.",
+        body_style,
+    ))
+    story.append(Paragraph(
+        "<b>Scope and limitations:</b> Regression target-correlation screening runs once on the outer training "
+        "partition before cross-validation, so internal validation folds are not fully isolated from that screen "
+        "and CV scores may be optimistic. Classification does not use this training target-correlation filter. "
+        "The checks do not automatically identify temporal leakage, categorical or semantic post-outcome features, "
+        "or related records crossing a random split; they reduce specific risks but do not establish that all "
+        "leakage is absent. Statistical tests also assume independence of observations, and correlations are not causal proof.",
+        body_style,
+    ))
 
     # Build PDF document
     doc.build(story)

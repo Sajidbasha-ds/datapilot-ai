@@ -28,9 +28,9 @@ Scikit-Learn estimators require purely numerical, non-null, 2-dimensional floati
 
 ---
 
-### Q5: What is Data Leakage and how does DataPilot AI prevent it?
+### Q5: What leakage-risk checks does DataPilot AI apply?
 **Answer:**
-Data leakage occurs when information from outside the training partition (such as the validation or test fold) is used during model training or feature preparation. A classic example is calculating the global mean across the entire dataset to impute missing values before splitting. DataPilot AI strictly isolates the train/test split **first**, fitting all `SimpleImputer`, `StandardScaler`, and `OneHotEncoder` transformers solely on `X_train`, and merely transforming `X_test`.
+Data leakage occurs when information unavailable at prediction time influences model fitting or evaluation. DataPilot AI splits supervised data before feature screening, removes constant and some heuristic ID-like columns using training features, and fits imputation, scaling, and encoding on training data. Cross-validation refits preprocessing per fold and candidate ranking uses CV metrics, with the outer holdout used for evaluation. For regression, numeric target-correlation screening (absolute Pearson $r \geq 0.98$) runs once on the outer training partition before CV, so CV folds are not fully isolated from this screen. Classification does not use that training target-correlation filter. These checks do not automatically detect temporal, categorical/semantic post-outcome, or related-record leakage, and they cannot prove that all leakage is absent.
 
 ---
 

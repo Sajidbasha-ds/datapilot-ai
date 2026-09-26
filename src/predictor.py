@@ -17,6 +17,7 @@ def predict_single(
     dataset_name: str = "custom",
     target_col: Optional[str] = None,
     model_name: str = "Model",
+    session_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Generates a prediction for a single user-input record and logs to SQLite."""
     # Convert input dictionary to 1-row DataFrame
@@ -65,6 +66,7 @@ def predict_single(
         input_data=input_dict,
         prediction_result=result,
         confidence=confidence,
+        session_id=session_id,
     )
 
     return {
@@ -83,6 +85,7 @@ def predict_batch(
     dataset_name: str = "batch_upload",
     target_col: Optional[str] = None,
     model_name: str = "Model",
+    session_id: Optional[str] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """Scores a batch DataFrame, appends prediction columns, and logs to database."""
     # Verify feature columns exist in uploaded batch
@@ -124,6 +127,7 @@ def predict_batch(
             input_data=sample_input,
             prediction_result=f"Batch generated ({len(output_df)} records)",
             confidence=sample_conf,
+            session_id=session_id,
         )
 
     summary = {

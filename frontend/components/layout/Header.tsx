@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({ session, onReset }) => {
             <div className="space-y-2.5 text-xs text-slate-400 mb-6">
               <div className="flex items-start space-x-2">
                 <span className="text-brand-cyan font-bold">•</span>
-                <span><strong className="text-slate-200">Strict Leakage Prevention:</strong> Preprocessing scalers and encoders are fitted exclusively on training splits.</span>
+                <span><strong className="text-slate-200">Training-Split Controls:</strong> Preprocessing scalers and encoders are fitted on training data; checks reduce specific risks but cannot identify every leakage source.</span>
               </div>
               <div className="flex items-start space-x-2">
                 <span className="text-brand-cyan font-bold">•</span>

@@ -1,4 +1,4 @@
-"""Automated Leakage-Free Preprocessing and Feature Engineering for DataPilot AI."""
+"""Training-partition preprocessing and feature engineering for DataPilot AI."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def filter_suspicious_features(
     drop_constants: bool = True,
     drop_leakage: bool = True,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """Identifies and removes zero-variance features, obvious IDs, and target leakage features."""
+    """Remove constants and heuristic IDs; screen numeric target correlation when y is supplied."""
     filtered_X = X.copy()
     dropped_logs: List[str] = []
     n_rows = len(filtered_X)
@@ -105,7 +105,7 @@ def build_preprocessing_pipeline(
     numerical_strategy: str = "median",
     scale_numeric: bool = True,
 ) -> Tuple[ColumnTransformer, List[str], List[str]]:
-    """Constructs a Scikit-Learn ColumnTransformer pipeline fitted strictly on X_train."""
+    """Construct a ColumnTransformer from the training partition's feature columns."""
     num_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = [c for c in X_train.columns if c not in num_cols]
     logs: List[str] = []

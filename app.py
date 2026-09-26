@@ -285,7 +285,7 @@ if selected_page == "1. Home":
         ("2. Profiling", "Zero-variance, ID & missingness checks"),
         ("3. Quality & EDA", "Tukey IQR outliers & Plotly charts"),
         ("4. Hypothesis", "Welch's t-test, Mann-Whitney & ANOVA"),
-        ("5. ML Engine", "Leakage-free ColumnTransformer & CV"),
+        ("5. ML Engine", "Training-split preprocessing & CV"),
         ("6. Inference", "Dynamic forms, batch CSV & PDF report"),
     ]
     for c, (title, desc) in zip(cols, steps):
@@ -308,7 +308,7 @@ if selected_page == "1. Home":
         st.markdown(
             """
             - **No Hallucinations**: Core statistical analyses and model metrics are computed via deterministic Scikit-Learn and SciPy routines.
-            - **Guaranteed Zero Data Leakage**: Scalers and encoders fit strictly on the training partition (`X_train`), never on the full dataset.
+            - **Leakage-Risk Controls**: The pipeline splits before screening features and fits preprocessing on training data. These checks reduce specific risks but cannot establish that every leakage source is absent.
             - **100% Free & Open**: Operates natively on local hardware without mandatory paid API subscriptions.
             - **Production & College Ready**: Built according to industry standards for student viva defense, portfolio review, and hackathons.
             """
@@ -789,20 +789,44 @@ elif selected_page == "7. ML Lab":
                 )
                 st.plotly_chart(fig_comp, use_container_width=True)
 
-                # Feature Importances Chart
+                # Model-specific feature attribution chart
                 best_name = ml_res["best_model_name"]
                 importances = ml_res.get("feature_importances", {}).get(best_name, {})
                 if importances:
-                    st.markdown(f"### 🎯 Feature Importance Drivers ({best_name})")
-                    imp_df = pd.DataFrame(list(importances.items()), columns=["Feature", "Importance"]).sort_values(by="Importance", ascending=True)
+                    attributions = ml_res.get("feature_attributions", {}).get(best_name, [])
+                    is_logistic = "Logistic" in best_name
+                    is_coefficient = (
+                        (bool(attributions) and attributions[0].get("method") == "coefficient")
+                        or any(model_name in best_name for model_name in ("Logistic", "Ridge", "Linear"))
+                    )
+                    metric_name = (
+                        "Absolute Model Coefficient Magnitude"
+                        if is_coefficient
+                        else "Tree Feature Importance"
+                    )
+                    st.markdown(f"### Model Feature Attribution ({best_name})")
+                    if attributions:
+                        imp_df = pd.DataFrame([
+                            {
+                                "Feature": item["feature"],
+                                metric_name: item["value"],
+                                "Coefficient": item.get("coefficient"),
+                                "Direction": item.get("direction"),
+                            }
+                            for item in attributions
+                        ]).sort_values(by=metric_name, ascending=True)
+                        if is_logistic and is_coefficient:
+                            st.caption("Binary coefficient sign indicates direction on the model decision score/log-odds for the positive class; this is not causal evidence.")
+                    else:
+                        imp_df = pd.DataFrame(list(importances.items()), columns=["Feature", metric_name]).sort_values(by=metric_name, ascending=True)
                     fig_imp = px.bar(
                         imp_df,
-                        x="Importance",
+                        x=metric_name,
                         y="Feature",
                         orientation="h",
-                        color="Importance",
+                        color=metric_name,
                         color_continuous_scale="Viridis",
-                        title=f"Feature Importances for {best_name}",
+                        title=f"{metric_name} for {best_name}",
                     )
                     st.plotly_chart(fig_imp, use_container_width=True)
 

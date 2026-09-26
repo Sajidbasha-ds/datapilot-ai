@@ -15,7 +15,15 @@ import { BarChart2, Info } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
 interface FeatureImportanceViewProps {
-  features: Array<{ feature: string; importance: number }>;
+  features: Array<{
+    feature: string;
+    importance: number;
+    method?: string;
+    coefficient?: number;
+    direction?: string;
+    decision_class?: string;
+    class_coefficients?: Array<{ class: string; coefficient: number }>;
+  }>;
   modelName: string;
 }
 
@@ -23,8 +31,13 @@ export const FeatureImportanceView: React.FC<FeatureImportanceViewProps> = ({
   features,
   modelName,
 }) => {
-  const isLinear = modelName.includes("Logistic") || modelName.includes("Ridge") || modelName.includes("Linear");
-  const metricLabel = isLinear ? "Normalized Absolute Coefficient (|β|)" : "Mean Impurity / Gini Gain";
+  const isLogistic = modelName.includes("Logistic");
+  const isLinear = isLogistic || modelName.includes("Ridge") || modelName.includes("Linear");
+  const metricLabel = isLogistic
+    ? "Absolute model coefficient (|β|)"
+    : isLinear
+      ? "Absolute model coefficient"
+      : "Tree-based feature importance";
 
   const chartData = [...features]
     .sort((a, b) => a.importance - b.importance)
@@ -39,7 +52,7 @@ export const FeatureImportanceView: React.FC<FeatureImportanceViewProps> = ({
             <span>Top Predictive Feature Attribution ({modelName})</span>
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Ranked by {metricLabel}. Higher scores reflect stronger predictive influence in decision boundaries.
+            Ranked by {metricLabel}. These model attributions describe associations, not causal effects.
           </p>
         </div>
 
@@ -67,7 +80,20 @@ export const FeatureImportanceView: React.FC<FeatureImportanceViewProps> = ({
                 width={95}
               />
               <Tooltip
-                formatter={(val: any) => [formatNumber(val, 4), metricLabel]}
+                formatter={(val: any, _name: string, item: any) => {
+                  const feature = item?.payload;
+                  if (isLogistic && typeof feature?.coefficient === "number") {
+                    const sign = feature.coefficient > 0 ? "positive" : feature.coefficient < 0 ? "negative" : "zero";
+                    return [`β ${feature.coefficient.toFixed(4)} (${sign}; |β| ${formatNumber(val, 4)})`, `Decision score for ${feature.decision_class ?? "positive class"}`];
+                  }
+                  if (isLogistic && feature?.class_coefficients?.length) {
+                    const classes = feature.class_coefficients
+                      .map((entry: { class: string; coefficient: number }) => `${entry.class}: ${entry.coefficient.toFixed(4)}`)
+                      .join(", ");
+                    return [`Max |β| ${formatNumber(val, 4)}; ${classes}`, "Class-specific coefficients"];
+                  }
+                  return [formatNumber(val, 4), metricLabel];
+                }}
                 contentStyle={{
                   backgroundColor: "#0F172A",
                   borderColor: "rgba(148, 163, 184, 0.2)",
@@ -88,7 +114,7 @@ export const FeatureImportanceView: React.FC<FeatureImportanceViewProps> = ({
         </div>
       ) : (
         <div className="py-8 text-center text-xs text-slate-500">
-          Feature importances not available for this model architecture.
+          Model feature attribution is not available for this model architecture.
         </div>
       )}
 
@@ -97,8 +123,10 @@ export const FeatureImportanceView: React.FC<FeatureImportanceViewProps> = ({
         <span>
           <strong className="text-slate-300 font-semibold">Attribution Note: </strong>
           {isLinear
-            ? "Weights represent standardized regression coefficients. They measure relative predictive sensitivity within the model, not external causal intervention effects."
-            : "Tree importance reflects total reduction in node impurity (Gini / MSE) contributed by splits on each feature across all estimators."}
+            ? isLogistic
+              ? "For binary Logistic Regression, coefficient sign indicates whether a transformed feature raises or lowers the decision score/log-odds for the positive class. Magnitudes depend on preprocessing and encoding; neither sign nor magnitude establishes causation."
+              : "Absolute coefficient magnitudes describe the fitted model in transformed feature space. Their scale depends on preprocessing and they do not establish causation."
+            : "Tree-based feature importance summarizes impurity reduction attributed to splits on each feature. It is model-specific and does not establish causation."}
         </span>
       </div>
     </div>

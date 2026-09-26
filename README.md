@@ -6,7 +6,7 @@
 [![Database](https://img.shields.io/badge/Database-SQLite-lightgrey.svg)](https://www.sqlite.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-An end-to-end, production-grade autonomous Data Science web application built in Python and Streamlit. **DataPilot AI** transforms raw CSV and Excel datasets into deep statistical profiles, applies leakage-free preprocessing pipelines, trains and compares competing machine learning algorithms with cross-validation, serves single and batch predictions, generates grounded AI explanations, and compiles executive multi-page PDF reports.
+An end-to-end autonomous Data Science web application built in Python and Streamlit. **DataPilot AI** transforms raw CSV and Excel datasets into statistical profiles, applies training-split preprocessing and targeted leakage-risk checks, trains and compares machine learning algorithms with cross-validation, serves single and batch predictions, generates grounded AI explanations, and compiles executive multi-page PDF reports.
 
 ---
 
@@ -18,7 +18,7 @@ An end-to-end, production-grade autonomous Data Science web application built in
 4. **Exploratory Data Analysis (EDA)**: Interactive 60fps Plotly visualizations — distributions with box-plot margins, category frequencies, annotated Pearson/Spearman heatmaps, and bivariate scatter plots with trendlines.
 5. **Statistical Rigor**: Descriptive statistics (Skewness, Kurtosis), hypothesis testing suite (Two-sample Welch's t-test, Mann-Whitney U, Chi-Square test of independence) with strict scientific disclaimers emphasizing that correlation does not imply causation.
 6. **Heuristic Target & Problem Formulation**: Semantic regex and positional analysis to suggest target columns; automatically classifies problem type into **Binary Classification**, **Multiclass Classification**, **Regression**, or **Unsupervised Analysis**.
-7. **Leakage-Free Preprocessing Pipeline**: All imputers, `StandardScaler`, and `OneHotEncoder` transformers are fit **strictly on training partitions (`X_train`)** to prevent data leakage.
+7. **Training-Split Controls**: Supervised training splits before feature screening; preprocessing transformers are fit on training partitions and refit within CV folds. Constant and heuristic ID-like columns are screened, and regression numeric target-correlation screening uses the outer training partition. A separate full-dataset data-quality diagnostic can flag numeric target-correlation candidates for review. These controls reduce specific risks but do not detect every form of leakage; regression screening is not isolated per CV fold.
 8. **Automated ML Benchmarking**: Trains multiple candidate algorithms with K-Fold cross-validation:
    - **Classification**: Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, K-Nearest Neighbors.
    - **Regression**: Linear Regression (OLS), Ridge Regression (L2), Decision Tree Regressor, Random Forest Regressor, Gradient Boosting Regressor.
@@ -26,7 +26,7 @@ An end-to-end, production-grade autonomous Data Science web application built in
 9. **Inference & Prediction System**: Dynamic schema-generated input forms for real-time single predictions with probability confidence scores, plus batch CSV file scoring with downloadable CSV outputs.
 10. **SQLite Audit Trail**: Logs every prediction event with timestamps and model metadata into an embedded SQLite database (`data/datapilot.db`).
 11. **Grounded AI Insights & Chatbot**: 100% deterministic, mathematically sound natural-language explanations (Executive & Technical modes), plus an interactive **Ask DataPilot** chatbot answering factual questions about the active dataset with zero hallucination and zero paid API requirement.
-12. **Executive PDF Reports**: Generates professional multi-page PDF reports using ReportLab containing dataset metadata, quality findings, model leaderboards, feature importances, and methodology disclaimers.
+12. **Executive PDF Reports**: Generates professional multi-page PDF reports using ReportLab containing dataset metadata, quality findings, model leaderboards, model-appropriate feature attribution, and methodology disclaimers.
 
 ---
 
@@ -47,8 +47,9 @@ An end-to-end, production-grade autonomous Data Science web application built in
 [ Target & Problem Detector (target_detector.py, problem_detector.py) ]
               │
               ▼
-[ Leakage-Free Preprocessing (feature_engineering.py) ]
-              │   ├── Fitted exclusively on X_train fold
+[ Training-Split Preprocessing & Feature Screening (feature_engineering.py) ]
+              │   ├── Outer split before feature screening
+              │   ├── Preprocessing fitted on training partition / CV training folds
               │   ├── Imputation (Median / Mode / Unknown)
               │   ├── Categorical OneHotEncoding (handle_unknown='ignore')
               │   └── Standardization (StandardScaler)
@@ -102,9 +103,9 @@ google workshop/
 │   ├── statistics.py          # Parametric/non-parametric tests, skewness, Pearson/Spearman p-values
 │   ├── target_detector.py     # Heuristic scoring of target candidates
 │   ├── problem_detector.py    # Problem formulation (Classification, Regression, Unsupervised)
-│   ├── feature_engineering.py # Leakage-free Sklearn ColumnTransformer pipelines
+│   ├── feature_engineering.py # Training-split preprocessing and heuristic screening
 │   ├── model_selector.py      # Algorithm registry tailored for responsive execution
-│   ├── model_trainer.py       # Stratified K-fold CV, model training, feature importances
+│   ├── model_trainer.py       # Stratified K-fold CV, model training, feature attribution
 │   ├── evaluator.py           # Multi-metric evaluation (Accuracy, F1, ROC-AUC, RMSE, R2)
 │   ├── predictor.py           # Single dynamic form inference and batch CSV scoring
 │   ├── insights.py            # Deterministic AI insights and 'Ask DataPilot' chatbot
@@ -188,7 +189,7 @@ For a 5-minute college presentation or external examiner evaluation:
 1. **Minute 1 — Problem & Vision**: Show the **Home** tab and explain the difference between a static dashboard and an autonomous Data Science system.
 2. **Minute 2 — Profiling & Hygiene**: Load `customer_churn.csv`. Show the **Data Overview** and **Data Quality** tabs, pointing out the automatic identification of suspicious columns and Tukey IQR outliers.
 3. **Minute 3 — Rigorous Statistics & EDA**: Open **EDA** to showcase the interactive Plotly correlation heatmap and **Statistics** to demonstrate Welch's t-test and Pearson p-values.
-4. **Minute 4 — ML Benchmarking & Prevention of Data Leakage**: Open **ML Lab**. Point out how `ColumnTransformer` is fitted strictly on `X_train`. Click "Run Automated Model Training", review the comparison leaderboard, and inspect the winning Random Forest model and feature importances.
+4. **Minute 4 — ML Benchmarking & Training-Split Controls**: Open **ML Lab**. Point out that preprocessing is fitted on training data and the holdout is reserved for evaluation. Mention that screening reduces specific risks but does not detect every leakage source. Click "Run Automated Model Training", review the comparison leaderboard, and inspect the winning Random Forest model and feature importances.
 5. **Minute 5 — Inference & Deliverables**: In **Predictions**, show real-time single prediction with dynamic schema widgets and the SQLite audit trail. Then navigate to **Reports** and generate the multi-page ReportLab PDF.
 
 For 21 comprehensive viva questions with full answers, refer to [docs/viva_questions.md](docs/viva_questions.md).

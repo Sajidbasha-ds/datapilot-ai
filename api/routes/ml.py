@@ -20,7 +20,7 @@ router = APIRouter(prefix="/ml", tags=["ml"])
 
 @router.post("/train")
 def train_pipeline(req: TrainRequest):
-    """Executes leakage-free model training, cross-validation, and benchmarking."""
+    """Runs split-first training, cross-validation, and model benchmarking."""
     session = session_manager.get_session(req.session_id)
     if not session:
         return ApiResponse(success=False, error={"code": "SESSION_NOT_FOUND", "message": "Session expired."})
@@ -97,9 +97,17 @@ def train_pipeline(req: TrainRequest):
         best_model_name = train_res["best_model_name"]
         feature_importances = train_res.get("feature_importances", {})
         top_features = feature_importances.get(best_model_name, {})
+        top_attributions = train_res.get("feature_attributions", {}).get(best_model_name, [])
 
-        n_train = train_res.get("n_train", 0)
-        n_test = train_res.get("n_test", 0)
+        n_train = train_res.get(
+            "n_train",
+            train_res.get("train_rows", 0),
+        )
+
+        n_test = train_res.get(
+            "n_test",
+            train_res.get("test_rows", 0),
+        )
 
         # Reliability Assessment
         reliability_warning = None
@@ -115,9 +123,17 @@ def train_pipeline(req: TrainRequest):
             "best_model_name": best_model_name,
             "leaderboard": leaderboard,
             "feature_importance": [
+                {
+                    **item,
+                    "importance": item["value"],
+                }
+                for item in top_attributions
+            ] if top_attributions else [
                 {"feature": k, "importance": v} for k, v in top_features.items()
             ],
+            "feature_attributions": top_attributions,
             "all_feature_importances": feature_importances,
+            "all_feature_attributions": train_res.get("feature_attributions", {}),
             "n_train": n_train,
             "n_test": n_test,
             "test_size": req.test_size,
@@ -167,9 +183,17 @@ def get_ml_results(session_id: str):
     leaderboard = results_df.to_dict(orient="records") if isinstance(results_df, pd.DataFrame) else []
     best_model_name = res["best_model_name"]
     top_features = res.get("feature_importances", {}).get(best_model_name, {})
+    top_attributions = res.get("feature_attributions", {}).get(best_model_name, [])
 
-    n_train = res.get("n_train", 0)
-    n_test = res.get("n_test", 0)
+    n_train = res.get(
+    "n_train",
+    res.get("train_rows", 0),
+    )
+
+    n_test = res.get(
+         "n_test",
+         res.get("test_rows", 0),
+    )
 
     reliability_warning = None
     if n_test < 25:
@@ -184,8 +208,15 @@ def get_ml_results(session_id: str):
         "best_model_name": best_model_name,
         "leaderboard": leaderboard,
         "feature_importance": [
+            {
+                **item,
+                "importance": item["value"],
+            }
+            for item in top_attributions
+        ] if top_attributions else [
             {"feature": k, "importance": v} for k, v in top_features.items()
         ],
+        "feature_attributions": top_attributions,
         "n_train": n_train,
         "n_test": n_test,
         "reliability_warning": reliability_warning,

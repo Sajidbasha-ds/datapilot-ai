@@ -39,5 +39,14 @@ Points outside these bounds are flagged. Optional Winsorization caps extreme val
 - **Adjusted $R^2$**: $1 - \left[\frac{(1 - R^2)(n - 1)}{n - k - 1}\right]$
 
 ## 4. Feature Importance Attribution
-- **Tree Ensembles (Random Forest, Gradient Boosting)**: Evaluated via mean decrease in impurity (Gini importance for classification, variance reduction for regression).
-- **Generalized Linear Models (Logistic, Ridge)**: Normalized absolute magnitude of coefficient weights $|w_j|$ after feature standardization.
+- **Tree Models (Decision Tree, Random Forest, Gradient Boosting)**: Report the fitted estimator's tree-based feature importance, derived from impurity reduction. This is model-specific and does not establish causation.
+- **Logistic Regression**: Report signed coefficients and coefficient strength for the actual transformed features produced by preprocessing. In binary classification, a positive or negative coefficient raises or lowers the model decision score/log-odds for the positive class; coefficient sign is not a real-world causal effect. Multiclass attribution is shown per class, with maximum absolute coefficient used only to rank strength.
+- **Other Linear Models**: Report absolute coefficient magnitude in transformed feature space as a model coefficient strength, not as a causal effect.
+- **Models without direct attribution (such as K-Nearest Neighbors)**: No feature attribution is fabricated.
+
+## 5. Training Split and Leakage-Risk Checks
+- Supervised training separates the outer train/test partitions before feature screening. Constant columns and some high-cardinality ID-like columns are screened using the outer training features.
+- Numeric feature/target correlation screening (absolute Pearson $r \geq 0.98$) is applied only for regression, using the full outer training partition. It runs before internal cross-validation, so validation folds can influence this screen and CV scores may be optimistic. Classification does not use this training target-correlation filter.
+- Data-quality analysis separately flags numeric feature/target correlations with absolute Pearson $r \geq 0.95$ on the full dataset for review; this is a diagnostic, not an automatic feature-removal step.
+- Imputers, scalers, and encoders are fitted within the training partition; the sklearn pipeline refits preprocessing within each CV training fold. Candidate ranking uses CV metrics, and the outer holdout is used for evaluation.
+- These controls reduce specific risks but do not establish that all leakage is absent. They do not automatically detect temporal leakage, categorical or semantic post-outcome features, or related records crossing a random train/test split.

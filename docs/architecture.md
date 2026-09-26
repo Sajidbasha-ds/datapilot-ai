@@ -19,8 +19,9 @@
 [ Target & Problem Detector (target_detector.py, problem_detector.py) ]
               │
               ▼
-[ Leakage-Free Preprocessing (feature_engineering.py) ]
-              │   ├── Fitted exclusively on X_train fold
+[ Training-Split Preprocessing & Feature Screening (feature_engineering.py) ]
+              │   ├── Outer split before feature screening
+              │   ├── Preprocessing fitted on training partition / CV training folds
               │   ├── Imputation (Median / Mode / Unknown)
               │   ├── Categorical OneHotEncoding (handle_unknown='ignore')
               │   └── Standardization (StandardScaler)
@@ -40,10 +41,12 @@
 
 ## 2. Component Design Principles
 
-### A. Strict Data Leakage Isolation
-In classical competitive data science and academic projects, data leakage is a fatal design flaw where information from outside the training dataset is used to create the model. In DataPilot AI:
-- `train_test_split` occurs **before** any imputers, scalers, or encoders are fit.
-- All transformers in `ColumnTransformer` are fitted solely on `X_train` and applied down to `X_test`.
+### A. Training-Split Controls and Leakage Limits
+- `train_test_split` occurs before supervised feature screening.
+- Constant and heuristic high-cardinality ID-like fields are filtered using the outer training features. For regression only, numeric feature/target correlations with absolute Pearson r >= 0.98 are screened using the outer training partition.
+- The separate data-quality report can flag numeric feature/target correlations with absolute Pearson r >= 0.95 on the full dataset; it is diagnostic only and does not remove those features.
+- Imputers, scalers, and encoders are fitted on the training partition and refitted inside each CV training fold; the holdout is used for evaluation, while candidate ranking uses CV metrics.
+- The regression target-correlation screen runs once before internal CV, so CV folds are not fully isolated from that target-based screen. The pipeline does not automatically detect temporal leakage, categorical or semantic post-outcome fields, or related records crossing a random split. These controls reduce specific risks; they do not prove all leakage is absent.
 
 ### B. Zero-Hallucination AI Insight Engine
 Unlike naive wrappers that forward raw data to external LLMs (which hallucinate numbers or breach privacy), DataPilot AI uses a deterministic statistical rule engine that derives exact numerical conclusions from computed metrics.

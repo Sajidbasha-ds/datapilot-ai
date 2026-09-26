@@ -94,6 +94,7 @@ def run_single_prediction(req: SinglePredictRequest):
             dataset_name=session.filename,
             target_col=session.target_col,
             model_name=best_name,
+            session_id=req.session_id,
         )
         return ApiResponse(success=True, data=sanitize_for_json(pred_res))
     except Exception as e:
@@ -146,7 +147,8 @@ async def run_batch_prediction(
             dataset_name=session.filename,
             target_col=target_col,
             model_name=best_name,
-        )
+            session_id=session_id,
+        )        
 
         preview_rows = scored_df.head(50).to_dict(orient="records")
         csv_str = scored_df.to_csv(index=False)
@@ -168,10 +170,16 @@ async def run_batch_prediction(
 
 
 @router.get("/history")
-def get_history(limit: int = 50):
+def get_history(
+    limit: int = 50,
+    session_id: Optional[str] = None,
+):
     """Fetches recent prediction audit records from database."""
     try:
-        df = get_prediction_history(limit=limit)
+        df = get_prediction_history(
+           limit=limit,
+           session_id=session_id,
+   )
         records = df.to_dict(orient="records") if not df.empty else []
         return ApiResponse(success=True, data=sanitize_for_json(records))
     except Exception as e:

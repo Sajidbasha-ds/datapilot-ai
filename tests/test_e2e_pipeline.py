@@ -92,7 +92,7 @@ def test_complete_e2e_lifecycle(tmp_path):
     assert len(insights["technical_insights"]) > 0
 
     qa_reply = answer_datapilot_query("What are the most important columns?", prof, qual, ml_res)
-    assert "importance score" in qa_reply
+    assert "tree feature-importance value" in qa_reply
 
     # 10. PDF Report Generation
     test_pdf = str(tmp_path / "e2e_report.pdf")

@@ -9,7 +9,7 @@
 | `src/statistics.py` | Descriptive statistics, Pearson/Spearman p-values, Welch's t-test, Chi-square. | `compute_descriptive_stats()`, `run_hypothesis_test()` |
 | `src/target_detector.py` | Heuristic scoring of target candidates via semantic regex and positional biases. | `detect_target_column()` |
 | `src/problem_detector.py` | Problem formulation analysis (Binary, Multiclass, Regression, Unsupervised). | `detect_problem_type()` |
-| `src/feature_engineering.py` | Leakage-free Sklearn ColumnTransformer and cyclical calendar features. | `build_preprocessing_pipeline()`, `filter_suspicious_features()` |
+| `src/feature_engineering.py` | Training-partition preprocessing, heuristic feature screening, and cyclical calendar features. | `build_preprocessing_pipeline()`, `filter_suspicious_features()` |
 | `src/model_selector.py` | Dynamic algorithm registry and parameter selection for laptops. | `get_candidate_models()`, `get_model_descriptions()` |
 | `src/model_trainer.py` | Stratified K-fold CV, train/test split, model fitting, and leaderboard ranking. | `train_supervised_models()`, `train_unsupervised_models()` |
 | `src/evaluator.py` | Metric calculations (Accuracy, F1, ROC-AUC, RMSE, R2, Silhouette Score). | `evaluate_classification_model()`, `evaluate_regression_model()` |
